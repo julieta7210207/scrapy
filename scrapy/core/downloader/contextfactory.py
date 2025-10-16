@@ -4,7 +4,6 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 from OpenSSL import SSL
-from twisted.internet._sslverify import _setAcceptableProtocols
 from twisted.internet.ssl import (
     AcceptableCiphers,
     CertificateOptions,
@@ -24,6 +23,32 @@ from scrapy.core.downloader.tls import (
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.misc import build_from_crawler, load_object
+
+try:
+    from twisted.internet._sslverify import _setAcceptableProtocols
+except ImportError:
+
+    def _setAcceptableProtocols(
+        context: SSL.Context, acceptableProtocols: list[bytes]
+    ) -> None:
+        """Configure ALPN on an OpenSSL context.
+
+        Fallback for Twisted versions that no longer provide the private
+        ``twisted.internet._sslverify._setAcceptableProtocols`` helper.
+        """
+
+        def _select_protocol(
+            conn: SSL.Connection, protocols: list[bytes]
+        ) -> bytes:
+            overlap = set(protocols) & set(acceptableProtocols)
+            for protocol in acceptableProtocols:
+                if protocol in overlap:
+                    return protocol
+            return b""
+
+        protocols = list(acceptableProtocols)
+        context.set_alpn_protos(protocols)
+        context.set_alpn_select_callback(_select_protocol)
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
