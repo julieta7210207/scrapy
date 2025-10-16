@@ -6,9 +6,8 @@ from service_identity.exceptions import CertificateError
 from twisted.internet._sslverify import (
     ClientTLSOptions,
     VerificationError,
-    verifyHostname,
 )
-from twisted.internet.ssl import AcceptableCiphers
+from twisted.internet.ssl import AcceptableCiphers, verifyHostname
 
 from scrapy.utils.ssl import get_temp_key_info, x509name_to_string
 
